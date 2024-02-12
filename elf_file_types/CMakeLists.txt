@@ -23,10 +23,10 @@ target_compile_options(main_static_pde PRIVATE -fno-pie)
 target_link_options(main_static_pde PRIVATE -no-pie -static)
 target_link_libraries(main_static_pde dl)
 
-#shared library
-add_library(foo SHARED libfoo.c)
+# shared library
+add_library(foo SHARED foo.c)
 
 # executable shared library
-add_library(foo_exec SHARED libfoo.c)
+add_library(foo_exec SHARED foo.c)
 target_compile_definitions(foo_exec PRIVATE PT_INTERP="/lib64/ld-linux-x86-64.so.2")
 target_link_options(foo_exec PRIVATE LINKER:-e,main)
