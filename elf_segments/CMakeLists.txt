@@ -1,4 +1,5 @@
-# Build an exe with a shared library that has segments alignment constraints to 2MB, fails on glibc < 2.35
+# Build an exe with a shared library that has segments alignment constraints to 2MB
+# This fails on glibc < 2.35, [p_align on PT_LOAD segment in DSO isn't honored](https://sourceware.org/bugzilla/show_bug.cgi?id=28676)
 add_library(foo_aligned SHARED foo.c)
 target_link_options(foo_aligned PRIVATE LINKER:-z,max-page-size=0x200000)
 add_executable(aligned_shared main.c)
