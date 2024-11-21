@@ -40,7 +40,7 @@ SymbolOverrides *symbol_overrides;
 decltype(&::write) real_write = nullptr;
 
 ssize_t write(int fildes, const void *buf, size_t nbyte) {
-    fputs("write intercepted\n", stderr);
+    fprintf(stderr, "write intercepted: \"%*s\"\n", nbyte, (const char *)buf);
     return real_write(fildes, buf, nbyte);
 }
 
