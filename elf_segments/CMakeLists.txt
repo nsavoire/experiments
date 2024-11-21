@@ -32,7 +32,7 @@ target_link_options(test_align_ld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/
 
 # lld allows parts of LOAD segments to belong to the same page and produces segments with Offset != VirtAddr
 add_executable(test_align_lld test.c)
-target_link_options(test_align_ld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_align.ld -fuse-ld=lld)
+target_link_options(test_align_lld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_align.ld -fuse-ld=lld)
 
 # Add LMA (load memory address) constraints to sections with linker script
 add_executable(test_lma_ld test.c)
