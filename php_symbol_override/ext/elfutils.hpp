@@ -57,9 +57,11 @@ public:
   // ref_symbol: output filled with the address of the symbol to override
   // do_not_override_this_symbol: if symbol value is equal to this value, do not
   //                              override it
+  // exclude_self: do not override the symbol if it is library containg code
   bool register_override(std::string_view symbol_name, uintptr_t new_symbol,
                          uintptr_t *ref_symbol,
-                         uintptr_t do_not_override_this_symbol = 0);
+                         uintptr_t do_not_override_this_symbol = 0,
+                         bool exclude_self = false);
 
   // override all registered symbols
   void apply_overrides();
@@ -75,6 +77,7 @@ private:
     uintptr_t *ref_symbol;
     uintptr_t new_symbol;
     uintptr_t do_not_override_this_symbol;
+    bool exclude_self;
   };
 
   using SymbolNameToOverrideMap = std::unordered_map<std::string, SymbolOverrideInfo>;

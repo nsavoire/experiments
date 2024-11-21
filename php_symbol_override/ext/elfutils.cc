@@ -30,6 +30,7 @@ struct DynamicInfo {
   const uint32_t *elf_hash;
   const uint32_t *gnu_hash;
   ElfW(Addr) base_address;
+  bool is_self = false;
 };
 
 namespace {
@@ -185,22 +186,21 @@ DynamicInfo retrieve_dynamic_info(const ElfW(Dyn) * dyn_begin,
           .base_address = base_address};
 }
 
-std::optional<DynamicInfo> retrieve_dynamic_info(const dl_phdr_info &info,
-                                                 bool exclude_self = false) {
+std::optional<DynamicInfo> retrieve_dynamic_info(const dl_phdr_info &info) {
   const ElfW(Phdr) *phdr_dynamic = nullptr;
-
+  bool is_self = false;
   for (auto phdr = info.dlpi_phdr, end = phdr + info.dlpi_phnum; phdr != end;
        ++phdr) {
     if (phdr->p_type == PT_DYNAMIC) {
       phdr_dynamic = phdr;
     }
-    if (exclude_self && phdr->p_type == PT_LOAD && phdr->p_flags & PF_X) {
+    if (phdr->p_type == PT_LOAD && phdr->p_flags & PF_X) {
       ElfW(Addr) local_symbol_addr = reinterpret_cast<ElfW(Addr)>(
           static_cast<std::optional<DynamicInfo> (*)(
-              const dl_phdr_info &, bool)>(&retrieve_dynamic_info));
+              const dl_phdr_info &)>(&retrieve_dynamic_info));
       if (phdr->p_vaddr + info.dlpi_addr <= local_symbol_addr &&
           local_symbol_addr < phdr->p_vaddr + info.dlpi_addr + phdr->p_memsz) {
-        return std::nullopt;
+        is_self = true;
       }
     }
   }
@@ -213,6 +213,7 @@ std::optional<DynamicInfo> retrieve_dynamic_info(const dl_phdr_info &info,
       info.dlpi_addr + phdr_dynamic->p_vaddr);
 
   DynamicInfo dyn_info = retrieve_dynamic_info(dyn_begin, info.dlpi_addr);
+  dyn_info.is_self = is_self;
 
   if (dyn_info.strtab.empty() || dyn_info.symtab.empty() ||
       !(dyn_info.elf_hash || dyn_info.gnu_hash)) {
@@ -425,8 +426,8 @@ void override_symbol(std::string_view symbol_name, uintptr_t new_symbol,
                      uintptr_t do_not_override_this_symbol) {
   SymbolOverride symbol_override{symbol_name, new_symbol,
                                  do_not_override_this_symbol};
-  iterate_over_loaded_libraries([&](const dl_phdr_info &info, bool is_exe) {
-    auto dyn_info = retrieve_dynamic_info(info, !is_exe);
+  iterate_over_loaded_libraries([&](const dl_phdr_info &info, bool /*is_exe*/) {
+    auto dyn_info = retrieve_dynamic_info(info);
     if (dyn_info) {
       symbol_override(info.dlpi_name, *dyn_info);
     }
@@ -462,10 +463,11 @@ LibraryCallbackStatus iterate_over_loaded_libraries(LibraryCallback callback) {
 bool SymbolOverrides::register_override(std::string_view symbol_name,
                                         uintptr_t new_symbol,
                                         uintptr_t *ref_symbol,
-                                        uintptr_t do_not_override_this_symbol) {
+                                        uintptr_t do_not_override_this_symbol,
+                                        bool exclude_self) {
   return _overrides
       .try_emplace(std::string{symbol_name}, ref_symbol, new_symbol,
-                   do_not_override_this_symbol)
+                   do_not_override_this_symbol, exclude_self)
       .second;
 }
 
@@ -550,12 +552,8 @@ void SymbolOverrides::update_overrides() {
     revert_info.processed = false;
   }
 
-  iterate_over_loaded_libraries([this](const dl_phdr_info &info, bool is_exe) {
-    // Avoid overriding symbols in lib profiling, except if it is statically
-    // linked into the executable.
-    // We cannot rely on `dl_phdr_info.dlpi_name` being an empty string for the
-    // exe, because musl passes the absolute path of the executable instead.
-    auto maybe_dyn_info = retrieve_dynamic_info(info, !is_exe);
+  iterate_over_loaded_libraries([this](const dl_phdr_info &info, bool /*is_exe*/) {
+    auto maybe_dyn_info = retrieve_dynamic_info(info);
     if (maybe_dyn_info) {
       apply_overrides_to_library(*maybe_dyn_info, info.dlpi_name);
     }
@@ -620,6 +618,7 @@ void SymbolOverrides::process_relocations(const DynamicInfo &dyn_info,
       // * the ref symbol is not null (ie. we were able to lookup the ref
       //   symbol)
       if (addr != override.do_not_override_this_symbol &&
+          !(it->second.exclude_self && dyn_info.is_self) &&
           !revert_info.old_value_per_address.contains(addr) &&
           *override.ref_symbol != 0) {
         revert_info.old_value_per_address[addr] = load64(addr);

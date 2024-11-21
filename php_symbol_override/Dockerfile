@@ -35,4 +35,4 @@ RUN cd /php-src/ext/hello \
 
 COPY ./launch.json /php-src/.vscode/launch.json
 
-CMD ["php", "-r", "echo hello_world() . PHP_EOL;"]
+CMD ["php", "-r", "echo \"Hello World!\" . PHP_EOL;"]
