@@ -2,6 +2,7 @@
 add_library(tls SHARED lib.cc otel_process_ctx.c)
 
 if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    # desc is the default for aarch64
     set(TLSDESC_OPT -mtls-dialect=desc)
 else()
     set(TLSDESC_OPT -mtls-dialect=gnu2)

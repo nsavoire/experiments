@@ -10,8 +10,7 @@ __attribute__((visibility("hidden"))) thread_local int local_tls_val1 = 1, local
 thread_local int tls_val = 3;
 
 // large array to force allocation outside of static TLS block
-thread_local int tls_val_array[10000000] = {5};
-
+thread_local int tls_val_array[4000000] = {5};
 thread_local int tls_value = 6;
 
 extern "C" {
