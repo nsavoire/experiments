@@ -1,8 +1,14 @@
 
 add_library(tls SHARED lib.cc otel_process_ctx.c)
 
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    set(TLSDESC_OPT -mtls-dialect=desc)
+else()
+    set(TLSDESC_OPT -mtls-dialect=gnu2)
+endif()
+
 add_library(tlsdesc SHARED lib.cc otel_process_ctx.c)
-target_compile_options(tlsdesc PRIVATE -mtls-dialect=gnu2)
+target_compile_options(tlsdesc PRIVATE ${TLSDESC_OPT})
 
 add_executable(tls_nopie main.cc)
 target_compile_options(tls_nopie PRIVATE -fno-pie)
@@ -20,11 +26,11 @@ target_link_options(tlsdesc_pie PRIVATE -pie)
 target_link_libraries(tlsdesc_pie tlsdesc)
 
 add_executable(tlsdesc_static_pie main.cc lib.cc otel_process_ctx.c)
-target_compile_options(tlsdesc_static_pie PRIVATE -mtls-dialect=gnu2 -fpie)
+target_compile_options(tlsdesc_static_pie PRIVATE ${TLSDESC_OPT} -fpie)
 target_link_options(tlsdesc_static_pie PRIVATE -pie)
 
 add_executable(tlsdesc_static_nopie main.cc lib.cc otel_process_ctx.c)
-target_compile_options(tlsdesc_static_nopie PRIVATE -mtls-dialect=gnu2 -fno-pie)
+target_compile_options(tlsdesc_static_nopie PRIVATE ${TLSDESC_OPT} -fno-pie)
 target_link_options(tlsdesc_static_nopie PRIVATE -no-pie)
 
 add_executable(tls_dlopen main_dlopen.cc)
