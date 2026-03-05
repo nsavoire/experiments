@@ -32,14 +32,17 @@ target_link_options(test_align_ld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/
 
 # lld allows parts of LOAD segments to belong to the same page and produces segments with Offset != VirtAddr
 add_executable(test_align_lld test.c)
-target_link_options(test_align_lld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_align.ld -fuse-ld=lld)
+target_link_options(test_align_lld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_align.ld )
+set_property(TARGET test_align_lld PROPERTY LINKER_TYPE LLD)
+
 
 # Add LMA (load memory address) constraints to sections with linker script
 add_executable(test_lma_ld test.c)
 target_link_options(test_lma_ld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_lma.ld)
 
 add_executable(test_lma_lld test.c)
-target_link_options(test_lma_lld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_lma.ld -fuse-ld=lld)
+target_link_options(test_lma_lld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_lma.ld)
+set_property(TARGET test_lma_lld PROPERTY LINKER_TYPE LLD)
 
 # mix sections
 add_executable(test_mix_ld test.c)
@@ -47,7 +50,8 @@ target_link_options(test_mix_ld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/te
 
 # this builds an exe with 7 LOAD segments that all belong to the same file page but are then mmapped at different addresses
 add_executable(test_mix_lld test.c)
-target_link_options(test_mix_lld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_mix.ld -fuse-ld=lld)
+target_link_options(test_mix_lld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_mix.ld)
+set_property(TARGET test_mix_lld PROPERTY LINKER_TYPE LLD)
 
 # mix sections with EXEC segment first
 add_executable(test_mix_exec_first_ld test.c)
@@ -55,4 +59,5 @@ target_link_options(test_mix_exec_first_ld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOU
 
 # this does not work with lld (exec segment is second)
 add_executable(test_mix_exec_first_lld test.c)
-target_link_options(test_mix_exec_first_lld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_mix_exec_first.ld -fuse-ld=lld)
+target_link_options(test_mix_exec_first_lld PRIVATE LINKER:-T,${CMAKE_CURRENT_SOURCE_DIR}/test_mix_exec_first.ld)
+set_property(TARGET test_mix_exec_first_lld PROPERTY LINKER_TYPE LLD)
